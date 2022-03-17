@@ -151,42 +151,28 @@ const userController = {
             if(user.role === 1){ //if user is admin
 
                 if(!req?.query?.id){ // if no id, error
-                    return res.status(400).json({msg: 'You are not authorized to access this resource'}) 
+                    return res.status(400).json({error:{code: res.statusCode, msg: 'You are not authorized to access this resource'}, data:null}) 
                 }
 
-                //if id, update user info
                 const status = req.body.status;
                 await User.findOneAndUpdate({_id: req.query.id}, status)
-                res.json({msg: "User updated"})                
+
+                return res.status(200).json({error:{code: null, msg: null}, data: user}) 
             }
 
             else if (user.role === 2){// user is customer
 
                 if(req?.query?.id){ // id is present   
-                    return res.status(403).json({msg: 'You are not allowed to access this resource'})   
+                    return res.status(400).json({error:{code: res.statusCode, msg: 'You are not authorized to access this resource'}, data:null}) 
                 }
                 //id is not present, update signed in user info
-                const {name, contact, password, province, city, ads, favourites} = req.body;
-                await User.findOneAndUpdate({_id: req.user.id}, {name, contact, password, province, city, ads, favourites});
-                res.json({msg: "User updated"})
+                const {name, contact, password, province, city, ads, favourites, status} = req.body;
+                await User.findOneAndUpdate({_id: req.user.id}, {name, contact, password, province, city, ads, favourites,status});
+                return res.status(200).json({error:{code: null, msg: null}, data: user}) 
             }  
             
         } catch (error) {
-            res.status(500).json({msg: error.message})
-        }
-    },
-
-    deleteUser: async (req,res) => {
-        try {
-            if(req.body.role != 2){
-                return res.status(403).json({msg: "You do not have permission to access this resource"})
-            }
-
-            await User.deleteOne({_id: req.user.id})
-
-        res.json({msg: "User deleted"})
-        } catch (error) {
-            res.status(500).json({msg: err.message})
+            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null})  
         }
     }
 }
