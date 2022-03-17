@@ -70,12 +70,12 @@ const userController = {
 
             if(user.role === 1){ //if user is admin
 
-                if(!req?.query?.id){ // if no id, return error
+                if(!req.params.id) // if no id, return error
                     return res.status(404).json({error:{code: res.statusCode, msg: 'User ID missing'}, data: null}) 
-                }
+                
 
                 //if id, return signed in user info
-                const user = await User.findById(req.query.id)
+                const user = await User.findById(req.params.id)
                 if (!user) return res.status(404).json({error:{code: res.statusCode, msg: 'User does not exist'}, data: null}) 
                 return res.status(200).json({error:{code: null, msg: null}, data: user}) 
                 
@@ -83,12 +83,12 @@ const userController = {
 
             else if (user.role === 2){// user is customer
 
-                if(!req?.query?.id){ // id is not present, return signed in user info
+                if(!req.params.id){ // id is not present, return signed in user info
                     return res.status(500).json({error:{code: null, msg: null}, data: user}) 
                 }
 
                 //id is present, return that user's info
-                const user = await User.findById(req.query.id)
+                const user = await User.findById(req.params.id)
                 if (!user) return res.status(404).json({error:{code: res.statusCode, msg: 'User does not exist'}, data: null}) 
                 
                 return res.status(200).json({error:{code: null, msg: null}, data: user}) 
@@ -150,19 +150,19 @@ const userController = {
 
             if(user.role === 1){ //if user is admin
 
-                if(!req?.query?.id){ // if no id, error
+                if(!req.params.id){ // if no id, error
                     return res.status(400).json({error:{code: res.statusCode, msg: 'You are not authorized to access this resource'}, data:null}) 
                 }
 
                 const status = req.body.status;
-                await User.findOneAndUpdate({_id: req.query.id}, status)
+                await User.findOneAndUpdate({_id: req.params.id}, status)
 
                 return res.status(200).json({error:{code: null, msg: null}, data: user}) 
             }
 
             else if (user.role === 2){// user is customer
 
-                if(req?.query?.id){ // id is present   
+                if(req.params.id){ // id is present   
                     return res.status(400).json({error:{code: res.statusCode, msg: 'You are not authorized to access this resource'}, data:null}) 
                 }
                 //id is not present, update signed in user info
