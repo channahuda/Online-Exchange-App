@@ -8,9 +8,9 @@ router.post('/login', userController.login)
 
 router.get('/logout', userController.logout)
 
-//router.get('/user_info', authorization.jwt, authorization.role(2), userController.getUserInfo)
-
 router.get('/user_info', authorization, userController.getUserInfo) 
+
+router.get('/all_users', authorization, userController.getAllUsers) 
 
 router.get('/refresh_token', userController.refreshToken)
 

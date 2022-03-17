@@ -6,19 +6,17 @@ const userController = {
     register: async (req,res) => {
         try {
 
-            const {name, email, contact, password, province, city, role} = req.body;
+            const {name, email, contact, password, province, city} = req.body;
 
             if(req?.body?.role != 2){
-                return res.status(401).json({msg: "You do not have permission to access this resource"})
+                return res.status(401).json({error:{code: res.statusCode, msg: 'You do not have permission to access this resource'}, data: null}) 
             }
 
             const user = await User.findOne({email})
 
-            if (user) 
-                return res.status(400).json({msg: "Email already exists"})
+            if (user) return res.status(409).json({error:{code: res.statusCode, msg: 'Email already exists'}, data: null}) 
 
-            if (password.length < 8)
-                return res.status(400).json({msg: "Password must be atleast 8 characters long"})
+            if (password.length < 8) return res.status(400).json({error:{code: res.statusCode, msg: 'Password must be atleaast 8 characters long'}, data: null}) 
 
             const hashedPassword = await bcrypt.hash(password, 10)
 
@@ -31,7 +29,7 @@ const userController = {
             
 
         } catch (err) {
-            return res.status(500).json({msg: err.message})
+            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null}) 
         }
     },
 
@@ -41,13 +39,12 @@ const userController = {
 
             const user = await User.findOne({email})
 
-            if (!user)
-                return res.status(400).json({msg: "Email doesnot exist"})
+            if (!user) return res.status(401).json({error:{code: res.statusCode, msg: 'Email does not exist'}, data: null}) 
 
             const comparePassword = await bcrypt.compare(password, user.password)
 
-            if (!comparePassword)
-                return res.status(400).json({msg: "Incorrect password"})
+            if (!comparePassword) return res.status(401).json({error:{code: res.statusCode, msg: 'Incorrect password'}, data: null}) 
+
 
             const accessToken = createAccessToken({id: user._id})
             const refreshToken = createRefreshToken({id: user._id})
@@ -58,83 +55,103 @@ const userController = {
                 maxAge: 7*24*60*60*1000
             })
 
-            res.json({msg: "Logged in!", accessToken: accessToken, refreshToken: refreshToken})
+            res.json({error:{code: null, msg: null}, data:{accessToken: accessToken, refreshToken: refreshToken}})
 
         } catch (error) {
-            res.status(400).json({msg: error.message})
+            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null}) 
         }
         
     },
 
     getUserInfo: async (req, res) => {
         try {
-            const user = await User.findById(req.user.id)
-            if (!user) return res.status(400).json({msg: 'User doesnot exist'})
+            const user = await User.findById(req.user.id).select("-password")
+            if (!user) return res.status(404).json({error:{code: res.statusCode, msg: 'User does not exist'}, data: null}) 
 
             if(user.role === 1){ //if user is admin
 
-                if(!req?.query?.id){ // if no id, return all users
-                    const all_users = await User.find()
-                    res.json(all_users)
+                if(!req?.query?.id){ // if no id, return error
+                    return res.status(404).json({error:{code: res.statusCode, msg: 'User ID missing'}, data: null}) 
                 }
 
                 //if id, return signed in user info
                 const user = await User.findById(req.query.id)
-                if (!user) return res.status(400).json({msg: 'User does not exist'})
-                res.json(user)
+                if (!user) return res.status(404).json({error:{code: res.statusCode, msg: 'User does not exist'}, data: null}) 
+                return res.status(200).json({error:{code: null, msg: null}, data: user}) 
                 
             }
 
             else if (user.role === 2){// user is customer
-                
-                if(req?.query?.id){ // id is present      
-                // for now, later a signed in user will need another seller's info    
-                    return res.status(401).json({msg: 'You are not allowed to access this resource'})   
+
+                if(!req?.query?.id){ // id is not present, return signed in user info
+                    return res.status(500).json({error:{code: null, msg: null}, data: user}) 
                 }
-                //id is not present, return signed in user info
-                res.json(user)
+
+                //id is present, return that user's info
+                const user = await User.findById(req.query.id)
+                if (!user) return res.status(404).json({error:{code: res.statusCode, msg: 'User does not exist'}, data: null}) 
+                
+                return res.status(200).json({error:{code: null, msg: null}, data: user}) 
+                
             }      
         } catch (error) {
-            return res.status(500).json({msg: error.message})
+            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null}) 
+        }
+    },
+
+    getAllUsers: async (req, res) => {
+        try {
+            const all_users = await User.find().select("-password")
+                if (!all_users) return res.status(404).json({error:{code: res.statusCode, msg: 'No user found'}, data: null}) 
+             
+            
+                return res.status(200).json({error:{code: null, msg: 'null'}, data: all_users}) 
+                
+            
+    
+        } catch (error) {
+            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null})  
         }
     },
 
     refreshToken: (req,res) =>{
         try {
             const rf_token = req.cookies.refreshtoken;
-            if(!rf_token) return res.status(400).json({msg: "Please login or register"})
+            if(!rf_token) return res.status(404).json({error:{code: res.statusCode, msg: 'Please login or register'}, data: null}) 
+
 
             jwt.verify(rf_token, process.env.REFRESH_TOKEN_SECRET, (err, user) =>{
-                if(err) return res.status(400).json({msg: "Please login or register"})
+                if(err) return res.status(500).json({error:{code: res.statusCode, msg: 'Please login or register'}, data: null}) 
+
 
                 const accessToken = createAccessToken({id: user.id})
-                res.json({user,accessToken})
+                return res.status(200).json({error:{code: null, msg: null}, data: accessToken}) 
             })
 
         } catch (err) {
-            return res.status(500).json({msg: err.message})
+            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null})  
         }
     },
 
     logout: async (req,res) => {
         try {
             res.clearCookie('refreshtoken', {path: '/user/refresh_token'})
-            return res.status(200).json({msg:"Logged Out"})
+            return res.status(200).json({error:{code: null, msg: null}, data: null}) 
         }
         catch(err){
-            return res.status(500).json({msg: err.message})
+            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null})  
         }
     },
 
     updateUserInfo: async (req,res) => {
         try {
             const user = await User.findById(req.user.id)
-            if (!user) return res.status(400).json({msg: 'User doesnot exist'})
+            if (!user) return res.status(404).json({error:{code: res.statusCode, msg: 'No user found'}, data: null}) 
 
             if(user.role === 1){ //if user is admin
 
-                if(!req?.query?.id){ // if no id, return all users
-                    return res.status(403).json({msg: 'You are not authorized to access this resource'}) 
+                if(!req?.query?.id){ // if no id, error
+                    return res.status(400).json({msg: 'You are not authorized to access this resource'}) 
                 }
 
                 //if id, update user info
@@ -156,25 +173,6 @@ const userController = {
             
         } catch (error) {
             res.status(500).json({msg: error.message})
-        }
-    },
-
-    updateUserStatus: async (req,res) => {
-        try {
-        } catch (error) {
-            res.status(500).json({msg: error.message})
-        }
-    },
-
-    getUserInfoForAdmin: async (req, res) => {
-        try {
-            const user = await User.findById(req.params.id)
-
-            if (!user) return res.status(400).json({msg: 'User doesnot exist'})
-
-            res.json(user)
-        } catch (error) {
-            return res.status(500).json({msg: error.message})
         }
     },
 
