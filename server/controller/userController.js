@@ -9,7 +9,7 @@ const userController = {
             const {name, email, contact, password, province, city} = req.body;
 
             if(req?.body?.role != 2){
-                return res.status(401).json({error:{code: res.statusCode, msg: 'You do not have permission to access this resource'}, data: null}) 
+                return res.status(403).json({error:{code: res.statusCode, msg: 'You do not have permission to access this resource'}, data: null}) 
             }
 
             const user = await User.findOne({email})
@@ -29,7 +29,7 @@ const userController = {
             
 
         } catch (err) {
-            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null}) 
+            return res.status(500).json({error:{code: err.code, msg: err.msg}, data: null}) 
         }
     },
 
@@ -58,7 +58,7 @@ const userController = {
             res.json({error:{code: null, msg: null}, data:{accessToken: accessToken, refreshToken: refreshToken}})
 
         } catch (error) {
-            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null}) 
+            return res.status(500).json({error:{code: err.code, msg: err.msg}, data: null}) 
         }
         
     },
@@ -95,7 +95,7 @@ const userController = {
                 
             }      
         } catch (error) {
-            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null}) 
+            return res.status(500).json({error:{code: err.code, msg: err.msg}, data: null}) 
         }
     },
 
@@ -103,14 +103,11 @@ const userController = {
         try {
             const all_users = await User.find().select("-password")
                 if (!all_users) return res.status(404).json({error:{code: res.statusCode, msg: 'No user found'}, data: null}) 
-             
-            
-                return res.status(200).json({error:{code: null, msg: 'null'}, data: all_users}) 
-                
-            
+
+                return res.status(200).json({error:{code: null, msg: 'null'}, data: all_users})                 
     
         } catch (error) {
-            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null})  
+            return res.status(500).json({error:{code: err.code, msg: err.msg}, data: null})  
         }
     },
 
@@ -129,7 +126,7 @@ const userController = {
             })
 
         } catch (err) {
-            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null})  
+            return res.status(500).json({error:{code: err.code, msg: err.msg}, data: null})  
         }
     },
 
@@ -139,7 +136,7 @@ const userController = {
             return res.status(200).json({error:{code: null, msg: null}, data: null}) 
         }
         catch(err){
-            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null})  
+            return res.status(500).json({error:{code: err.code, msg: err.msg}, data: null})  
         }
     },
 
@@ -172,7 +169,7 @@ const userController = {
             }  
             
         } catch (error) {
-            return res.status(500).json({error:{code: res.statusCode, msg: 'Interval Server Error'}, data: null})  
+            return res.status(500).json({error:{code: res.statusCode, msg: error.msg}, data: null})  
         }
     }
 }
